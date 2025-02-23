@@ -1,4 +1,0 @@
-I used gemini to remember how to hide and reveal elements using .style.display = 'block' or 'none';
-chat debugging stuff
-icon alt text
-app image

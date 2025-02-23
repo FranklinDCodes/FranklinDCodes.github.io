@@ -1,0 +1,5 @@
+1. I used Gemini to remember how to hide and reveal elements using .style.display = 'block' or 'none';
+2. I used ChatGPT to get information on why my async function was returning pending promises and how to use them.
+    I ended up not returning anything from my async function so I didn't really use this.
+3. I asked Gemini about accessability with icons it showed me to set alt text for them just like an img.
+4. I used MetaAI to create the weather icon image
