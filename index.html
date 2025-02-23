@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootswatch@4.5.2/dist/flatly/bootstrap.min.css" integrity="sha384-qF/QmIAj5ZaYFAeQcrQ6bfVMAh4zZlrGwTPY7T/M+iTTLJqJBJjwwnsE5Y0mV7QK" crossorigin="anonymous">
+
+</head>
+<body class="bg-dark">
+    <div class="d-flex justify-content-center align-items-center">
+
+        <form id="frmCoordinates" class="card bg-primary mt-5 col-12 col-md-8 col-lg-5"> 
+            <div class="card-body bg-primary">
+                <h4 class="mt-3 text-light">Enter coordinates to find the weather</h4>
+                <div class="d-flex flex-row mx-3 mb-3">
+                    <input id="inpCoordinate1" class="form-control mt-3 mr-3 text-primary" placeholder="latitude" type="text" aria-label="enter coordinate latitude">
+                    <input id="inpCoordinate2" class="form-control mt-3 p-2 text-primary" placeholder="longitude" type="text" aria-label="enter coordinate longitude">
+                </div>
+                <button id="btnCoordinateSubmit" class="btn btn-info mt-4 mb-4 ml-3 col-4" type="button">submit</button>
+            </div>
+        </form>
+
+        <div id="divWeatherPanel" class="mt-5 col-12 col-md-8 col-lg-5 align-items-center" style="display:none;">
+            <div class="d-flex flex-column bg-primary col-12 p-5 justify-content-center align-items-center">
+                <div class="d-flex flex-row align-items-center justify-content-center">
+                    <h1 id="txtTemp" class="text-light" style="font-size: 72px;"></h1>
+                    <i id="iconTemp" style="font-size: 54px;"></i>
+                </div>
+                <h5 id="txtLocation" class="text-light"></h5>
+            </div>
+            <div class="d-flex flex-column bg-light col-12 p-4 justify-content-center align-items-center">
+                <i id="iconConditions" style="font-size: 100px;"></i>
+                <div class="d-flex flex-row align-items-center justify-content-center">
+                    <i class="bi bi-wind p-2" style="font-size: 28px;" alt="wind speed"></i>
+                    <h3 id="txtWindSpeed" class="text-primary"></h3>
+                </div>
+            </div>
+            <button id="btnNewLocation" type="button" class="btn btn-link text-primary">Click to check out a new location</button>
+        </div>
+
+    </div>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+
+        // function to create an api endpoint given coordinates
+        function createEndpoint(strLatitude, strLongitude) {
+
+            return "https://api.open-meteo.com/v1/forecast?latitude=" + strLatitude + "&longitude=" + strLongitude + "&current=temperature_2m,is_day,rain,snowfall,cloud_cover,wind_speed_10m,wind_direction_10m&temperature_unit=fahrenheit&wind_speed_unit=mph&precipitation_unit=inch";
+
+        }
+
+        // fetches weather data from endpoint and populates it to panel
+        function populateWeatherData(strLat, strLong) {
+
+            // create api endpoint
+            const strApiEndpoint = createEndpoint(strLat, strLong);
+
+            // try fetch
+            try {
+
+                // fetch api endpoint
+                fetch(strApiEndpoint)
+                .then(objResponse => objResponse.json())
+                .then(jsonWeatherData => {
+
+                    // update local storage
+                    localStorage.setItem("locationLat", strLat);
+                    localStorage.setItem("locationLong", strLong);
+
+                    // reveal panel if hidden
+                    if (document.querySelector('#divWeatherPanel').style.display == 'none') {
+
+                        $('#frmCoordinates').slideUp(function() {
+
+                            $('#divWeatherPanel').slideDown();
+                        });
+
+                    }
+                    
+
+                    // populate the weather panel with api data
+                    // condition data
+                    const floatRainfall = jsonWeatherData["current"]["rain"];
+                    const floatSnowfall = jsonWeatherData["current"]["snowfall"];
+                    const intIsDay = jsonWeatherData["current"]["is_day"];
+                    const intCloudCover = jsonWeatherData["current"]["cloud_cover"];
+
+                    // condition icon class
+                    let strConditionClass = "bi ";
+                    let strConditionAltText = "";
+
+                    // check conditions
+
+                    // check precipitation
+                    // rain
+                    if (floatRainfall > 0) {
+
+                        strConditionClass += "bi-cloud-rain-fill";
+                        strConditionAltText = "the condition is rain";
+
+                    }
+                    // snow
+                    else if (floatSnowfall > 0) {
+
+                        strConditionClass += "bi-cloud-snow-fill";
+                        strConditionAltText = "the condition is snow";
+
+                    }
+                    // check day
+                    else if (intIsDay == 1) {
+
+                        // check cloud cover
+                        // https://weather.com/news/weather/news/2023-06-19-weather-words-cloudy-definition
+                        
+                        // cloudy
+                        if (intCloudCover >= 70) {
+
+                            strConditionClass += "bi-clouds-fill";
+                            strConditionAltText = "the conditions are cloudy";
+
+                        }
+                        // partly cloudy
+                        else if (intCloudCover >= 51) {
+
+                            strConditionClass += "bi-cloud-sun-fill";
+                            strConditionAltText = "the conditions are partly cloudy";
+
+                        }
+                        // mostly sunny / sunny
+                        else {
+
+                            strConditionClass += "bi-sun-fill";
+                            strConditionAltText = "the conditions are sunny";
+
+                        }
+
+                    }
+                    // check night
+                    else {
+
+                        // check cloud cover
+                        // https://weather.com/news/weather/news/2023-06-19-weather-words-cloudy-definition
+
+                        // cloudy
+                        if (intCloudCover >= 70) {
+
+                            strConditionClass += "bi-clouds-fill";
+                            strConditionAltText = "the conditions are cloudy";
+
+                        }
+                        // partly cloudy
+                        else if (intCloudCover >= 51) {
+
+                            strConditionClass += "bi-cloud-moon-fill";
+                            strConditionAltText = "the conditions are partly cloudy";
+
+                        }
+                        // moony
+                        else {
+
+                            strConditionClass += "bi-moon-stars-fill";
+                            strConditionAltText = "the conditions are cloudy";
+
+                        }
+
+                    }
+
+                    // set conditions
+                    document.querySelector('#iconConditions').className = strConditionClass;
+                    document.querySelector('#iconConditions').alt = strConditionAltText;
+
+                    // wind data
+                    const floatWindSpeed = jsonWeatherData["current"]["wind_speed_10m"];
+                    const intWindDirection = jsonWeatherData["current"]["wind_direction_10m"];
+
+                    // set wind
+                    // https://stackoverflow.com/questions/9453421/how-to-round-float-numbers-in-javascript
+                    document.querySelector('#txtWindSpeed').textContent = Number((floatWindSpeed).toFixed(0)) + " mph";
+
+                    // temp data
+                    const floatTemp = jsonWeatherData["current"]["temperature_2m"];
+
+                    // temp icon class
+                    let strTempIconClass = "bi ";
+
+                    // set temp icon
+                    // if high temp
+                    if (floatTemp >= 70) {
+
+                        strTempIconClass += "bi-thermometer-high";
+
+                    }
+                    // if moderate temp
+                    else if (floatTemp >= 50) {
+
+                        strTempIconClass += "bi-thermometer-half";
+
+                    }
+                    // low temp
+                    else {
+
+                        strTempIconClass += "bi-thermometer-low";
+
+                    }
+
+                    // set temp icon
+                    document.querySelector('#iconTemp').className += strTempIconClass + " text-light";
+
+                    // set temp
+                    // https://stackoverflow.com/questions/9453421/how-to-round-float-numbers-in-javascript
+                    document.querySelector('#txtTemp').innerHTML = Number((floatTemp).toFixed(0)) + "&deg";
+
+                    // set location
+                    document.querySelector('#txtLocation').innerHTML = "(" + strLat + ", " + strLong + ")";
+
+                });
+
+            }
+            // catch https error
+            catch(objError) {
+
+                console.log(`Error fetching object data: ${objError}`);
+
+                // fire sweet alert
+                Swal.fire({
+                    title: "Uh-oh, there seems to be an error.",
+                    html: "<p>The coordinate pair you entered was invalid. Please try again.</p>",
+                    icon: "error"
+                });
+
+            }
+
+        }
+
+        // check if coordinates return a valid response from the api
+        /*async function validateCoordinates(strLat, strLong) {
+
+            try {
+
+                // fetch from api
+                const strUrl = createEndpoint(strLat, strLong);
+                const objResponse = await fetch(strUrl);
+
+                if (!objResponse.ok) {
+
+                    throw new Error(`HTTP Error Status: ${objResponse.status}`);
+
+                }
+
+                const objData = await objResponse.json();
+                if (objData.length > 0) {
+
+                    console.log(objData);
+
+                }
+                else {
+
+                    Swal.fire({
+                        title: "Animal not found",
+                        icon: "error"
+                    })
+
+
+                }
+
+
+                }
+                catch(objError) {
+
+                console.log(`Error fetching object data: ${objError}`);
+
+                // create a sweet alert for user
+
+                }
+
+
+
+        }
+        */
+
+        // check if local storage
+        if (localStorage.getItem("locationLat") && localStorage.getItem("locationLong")) {
+
+            // switch displays
+            document.querySelector('#frmCoordinates').style.display = 'none';
+            document.querySelector('#divWeatherPanel').style.display = 'block';
+
+            // populate panel
+            populateWeatherData(localStorage.getItem("locationLat"), localStorage.getItem("locationLong"));
+
+        }
+
+        // runs on click of submit button
+        document.querySelector('#btnCoordinateSubmit').addEventListener('click', function() {
+
+            // validate that all forms were filled out
+            let boolError = false;
+            const strLat = document.querySelector('#inpCoordinate1').value;
+            const strLong = document.querySelector('#inpCoordinate2').value;
+            
+            // check input latitude
+            if (strLat.length < 1) {
+
+                boolError = true;
+
+            }
+            else if (strLong.length < 1) {
+
+                boolError = true;
+            }
+
+            if (boolError) {
+
+                Swal.fire({
+                    title: "Uh-oh, there seems to be an error.",
+                    html: "<p>Please fille out both coordinate fields.</p>",
+                    icon: "error"
+
+                });
+
+            }
+
+            // if no errors
+            else {
+
+                //const strApiEndpoint = createEndpoint(strLat, strLong);
+                populateWeatherData(strLat, strLong);
+
+            }
+        
+        });
+
+        // define on-click to go back to coordinate selector
+        document.querySelector('#btnNewLocation').addEventListener('click', function() {
+
+            $('#divWeatherPanel').slideUp(function() {
+                
+                $('#frmCoordinates').slideDown();
+            });
+
+        });
+
+    </script>
+</body>
+</html>

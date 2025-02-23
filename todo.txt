@@ -1,0 +1,8 @@
+\,| accessability
+X | change to async?
+\,| check varnames for datatypes
+X | open street view or map to get name from coords
+  | create https error catcher for api
+  | write generative ai stuff
+  | app thing
+
