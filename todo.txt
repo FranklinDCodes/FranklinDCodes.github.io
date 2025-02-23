@@ -5,5 +5,5 @@ X | open street view or map to get name from coords
   | create https error catcher for api
   | write generative ai stuff
 \,| host
-  | app thing
+\,| app thing
 

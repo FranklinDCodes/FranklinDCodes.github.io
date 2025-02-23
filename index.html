@@ -10,8 +10,6 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootswatch@4.5.2/dist/flatly/bootstrap.min.css" integrity="sha384-qF/QmIAj5ZaYFAeQcrQ6bfVMAh4zZlrGwTPY7T/M+iTTLJqJBJjwwnsE5Y0mV7QK" crossorigin="anonymous">
 
-    
-
 </head>
 <body class="bg-dark">
     <div class="d-flex justify-content-center align-items-center">
@@ -58,171 +56,38 @@
 
         }
 
-        // fetches weather data from endpoint and populates it to panel
-        function populateWeatherData(strLat, strLong) {
+        // check if coordinates return a valid response from the api
+        async function populateWeatherData(strLat, strLong) {
 
             // create api endpoint
             const strApiEndpoint = createEndpoint(strLat, strLong);
+
+            let jsonWeatherData = '';
 
             // try fetch
             try {
 
                 // fetch api endpoint
-                fetch(strApiEndpoint)
-                .then(objResponse => objResponse.json())
-                .then(jsonWeatherData => {
+                let objResponse = await fetch(strApiEndpoint);
 
-                    // update local storage
-                    localStorage.setItem("locationLat", strLat);
-                    localStorage.setItem("locationLong", strLong);
+                // make sure response is ok
+                if (!objResponse.ok) {
 
-                    // reveal panel if hidden
-                    if (document.querySelector('#divWeatherPanel').style.display == 'none') {
+                    console.log("Object response is invalid");
 
-                        $('#frmCoordinates').slideUp(function() {
+                    // fire sweet alert
+                    Swal.fire({
+                        title: "Uh-oh, there seems to be an error.",
+                        html: "<p>The coordinate pair you entered was invalid. Please try again.</p>",
+                        icon: "error"
+                    });
 
-                            $('#divWeatherPanel').slideDown();
-                        });
+                    return;
 
-                    }
-                    
+                }
 
-                    // populate the weather panel with api data
-                    // condition data
-                    const floatRainfall = jsonWeatherData["current"]["rain"];
-                    const floatSnowfall = jsonWeatherData["current"]["snowfall"];
-                    const intIsDay = jsonWeatherData["current"]["is_day"];
-                    const intCloudCover = jsonWeatherData["current"]["cloud_cover"];
-
-                    // condition icon class
-                    let strConditionClass = "bi ";
-                    let strConditionAltText = "";
-
-                    // check conditions
-
-                    // check precipitation
-                    // rain
-                    if (floatRainfall > 0) {
-
-                        strConditionClass += "bi-cloud-rain-fill";
-                        strConditionAltText = "the condition is rain";
-
-                    }
-                    // snow
-                    else if (floatSnowfall > 0) {
-
-                        strConditionClass += "bi-cloud-snow-fill";
-                        strConditionAltText = "the condition is snow";
-
-                    }
-                    // check day
-                    else if (intIsDay == 1) {
-
-                        // check cloud cover
-                        // https://weather.com/news/weather/news/2023-06-19-weather-words-cloudy-definition
-                        
-                        // cloudy
-                        if (intCloudCover >= 70) {
-
-                            strConditionClass += "bi-clouds-fill";
-                            strConditionAltText = "the conditions are cloudy";
-
-                        }
-                        // partly cloudy
-                        else if (intCloudCover >= 51) {
-
-                            strConditionClass += "bi-cloud-sun-fill";
-                            strConditionAltText = "the conditions are partly cloudy";
-
-                        }
-                        // mostly sunny / sunny
-                        else {
-
-                            strConditionClass += "bi-sun-fill";
-                            strConditionAltText = "the conditions are sunny";
-
-                        }
-
-                    }
-                    // check night
-                    else {
-
-                        // check cloud cover
-                        // https://weather.com/news/weather/news/2023-06-19-weather-words-cloudy-definition
-
-                        // cloudy
-                        if (intCloudCover >= 70) {
-
-                            strConditionClass += "bi-clouds-fill";
-                            strConditionAltText = "the conditions are cloudy";
-
-                        }
-                        // partly cloudy
-                        else if (intCloudCover >= 51) {
-
-                            strConditionClass += "bi-cloud-moon-fill";
-                            strConditionAltText = "the conditions are partly cloudy";
-
-                        }
-                        // moony
-                        else {
-
-                            strConditionClass += "bi-moon-stars-fill";
-                            strConditionAltText = "the conditions are cloudy";
-
-                        }
-
-                    }
-
-                    // set conditions
-                    document.querySelector('#iconConditions').className = strConditionClass;
-                    document.querySelector('#iconConditions').alt = strConditionAltText;
-
-                    // wind data
-                    const floatWindSpeed = jsonWeatherData["current"]["wind_speed_10m"];
-                    const intWindDirection = jsonWeatherData["current"]["wind_direction_10m"];
-
-                    // set wind
-                    // https://stackoverflow.com/questions/9453421/how-to-round-float-numbers-in-javascript
-                    document.querySelector('#txtWindSpeed').textContent = Number((floatWindSpeed).toFixed(0)) + " mph";
-
-                    // temp data
-                    const floatTemp = jsonWeatherData["current"]["temperature_2m"];
-
-                    // temp icon class
-                    let strTempIconClass = "bi ";
-
-                    // set temp icon
-                    // if high temp
-                    if (floatTemp >= 70) {
-
-                        strTempIconClass += "bi-thermometer-high";
-
-                    }
-                    // if moderate temp
-                    else if (floatTemp >= 50) {
-
-                        strTempIconClass += "bi-thermometer-half";
-
-                    }
-                    // low temp
-                    else {
-
-                        strTempIconClass += "bi-thermometer-low";
-
-                    }
-
-                    // set temp icon
-                    document.querySelector('#iconTemp').className += strTempIconClass + " text-light";
-
-                    // set temp
-                    // https://stackoverflow.com/questions/9453421/how-to-round-float-numbers-in-javascript
-                    document.querySelector('#txtTemp').innerHTML = Number((floatTemp).toFixed(0)) + "&deg";
-
-                    // set location
-                    document.querySelector('#txtLocation').innerHTML = "(" + strLat + ", " + strLong + ")";
-
-                });
+                // convert response to json
+                jsonWeatherData = await objResponse.json();
 
             }
             // catch https error
@@ -237,55 +102,162 @@
                     icon: "error"
                 });
 
+                return;
+
             }
 
-        }
+            // otherwise populate weather data
 
-        // check if coordinates return a valid response from the api
-        /*async function validateCoordinates(strLat, strLong) {
+            // update local storage
+            localStorage.setItem("locationLat", strLat);
+            localStorage.setItem("locationLong", strLong);
 
-            try {
+            // reveal panel if hidden
+            if (document.querySelector('#divWeatherPanel').style.display == 'none') {
 
-                // fetch from api
-                const strUrl = createEndpoint(strLat, strLong);
-                const objResponse = await fetch(strUrl);
+                $('#frmCoordinates').slideUp(function() {
 
-                if (!objResponse.ok) {
+                    $('#divWeatherPanel').slideDown();
+                });
 
-                    throw new Error(`HTTP Error Status: ${objResponse.status}`);
+            }
+
+            // populate the weather panel with api data
+            // condition data
+            const floatRainfall = jsonWeatherData["current"]["rain"];
+            const floatSnowfall = jsonWeatherData["current"]["snowfall"];
+            const intIsDay = jsonWeatherData["current"]["is_day"];
+            const intCloudCover = jsonWeatherData["current"]["cloud_cover"];
+
+            // condition icon class
+            let strConditionClass = "bi ";
+            let strConditionAltText = "";
+
+            // check conditions
+
+            // check precipitation
+            // rain
+            if (floatRainfall > 0) {
+
+                strConditionClass += "bi-cloud-rain-fill";
+                strConditionAltText = "the condition is rain";
+
+            }
+            // snow
+            else if (floatSnowfall > 0) {
+
+                strConditionClass += "bi-cloud-snow-fill";
+                strConditionAltText = "the condition is snow";
+
+            }
+            // check day
+            else if (intIsDay == 1) {
+
+                // check cloud cover
+                // https://weather.com/news/weather/news/2023-06-19-weather-words-cloudy-definition
+                
+                // cloudy
+                if (intCloudCover >= 70) {
+
+                    strConditionClass += "bi-clouds-fill";
+                    strConditionAltText = "the conditions are cloudy";
 
                 }
+                // partly cloudy
+                else if (intCloudCover >= 51) {
 
-                const objData = await objResponse.json();
-                if (objData.length > 0) {
-
-                    console.log(objData);
+                    strConditionClass += "bi-cloud-sun-fill";
+                    strConditionAltText = "the conditions are partly cloudy";
 
                 }
+                // mostly sunny / sunny
                 else {
 
-                    Swal.fire({
-                        title: "Animal not found",
-                        icon: "error"
-                    })
-
+                    strConditionClass += "bi-sun-fill";
+                    strConditionAltText = "the conditions are sunny";
 
                 }
 
+            }
+            // check night
+            else {
+
+                // check cloud cover
+                // https://weather.com/news/weather/news/2023-06-19-weather-words-cloudy-definition
+
+                // cloudy
+                if (intCloudCover >= 70) {
+
+                    strConditionClass += "bi-clouds-fill";
+                    strConditionAltText = "the conditions are cloudy";
 
                 }
-                catch(objError) {
+                // partly cloudy
+                else if (intCloudCover >= 51) {
 
-                console.log(`Error fetching object data: ${objError}`);
+                    strConditionClass += "bi-cloud-moon-fill";
+                    strConditionAltText = "the conditions are partly cloudy";
 
-                // create a sweet alert for user
+                }
+                // moony
+                else {
+
+                    strConditionClass += "bi-moon-stars-fill";
+                    strConditionAltText = "the conditions are cloudy";
 
                 }
 
+            }
 
+            // set conditions
+            document.querySelector('#iconConditions').className = strConditionClass;
+            document.querySelector('#iconConditions').alt = strConditionAltText;
+
+            // wind data
+            const floatWindSpeed = jsonWeatherData["current"]["wind_speed_10m"];
+            const intWindDirection = jsonWeatherData["current"]["wind_direction_10m"];
+
+            // set wind
+            // https://stackoverflow.com/questions/9453421/how-to-round-float-numbers-in-javascript
+            document.querySelector('#txtWindSpeed').textContent = Number((floatWindSpeed).toFixed(0)) + " mph";
+
+            // temp data
+            const floatTemp = jsonWeatherData["current"]["temperature_2m"];
+
+            // temp icon class
+            let strTempIconClass = "bi ";
+
+            // set temp icon
+            // if high temp
+            if (floatTemp >= 70) {
+
+                strTempIconClass += "bi-thermometer-high";
+
+            }
+            // if moderate temp
+            else if (floatTemp >= 50) {
+
+                strTempIconClass += "bi-thermometer-half";
+
+            }
+            // low temp
+            else {
+
+                strTempIconClass += "bi-thermometer-low";
+
+            }
+
+            // set temp icon
+            document.querySelector('#iconTemp').className += strTempIconClass + " text-light";
+
+            // set temp
+            // https://stackoverflow.com/questions/9453421/how-to-round-float-numbers-in-javascript
+            document.querySelector('#txtTemp').innerHTML = Number((floatTemp).toFixed(0)) + "&deg";
+
+            // set location
+            document.querySelector('#txtLocation').innerHTML = "(" + strLat + ", " + strLong + ")";
 
         }
-        */
 
         // check if local storage
         if (localStorage.getItem("locationLat") && localStorage.getItem("locationLong")) {
